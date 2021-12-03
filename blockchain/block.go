@@ -1,10 +1,5 @@
 package blockchain
 
-import (
-	"bytes"
-	"crypto/sha256"
-)
-
 /**
  *Represents blockchain
  */
@@ -23,23 +18,18 @@ type Block struct {
 	Hash     []byte
 	Data     []byte
 	PrevHash []byte
-}
-
-/**
- *Helps create hash based on previous hash and the data
- */
-func (b *Block) DeriveHash() {
-	info := bytes.Join([][]byte{b.Data, b.PrevHash}, []byte{})
-	hash := sha256.Sum256(info)
-	b.Hash = hash[:]
+	Nonce    int
 }
 
 /*
  *make actual block
  */
 func CreateBlock(data string, PrevHash []byte) *Block {
-	block := &Block{[]byte{}, []byte(data), PrevHash}
-	block.DeriveHash()
+	block := &Block{[]byte{}, []byte(data), PrevHash, 0}
+	pow := NewProof(block)
+	nonce, hash := pow.Run()
+	block.Hash = hash[:]
+	block.Nonce = nonce
 	return block
 }
 
