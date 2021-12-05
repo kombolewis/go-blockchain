@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/gob"
 	"log"
 )
@@ -13,17 +14,30 @@ import (
  *
  */
 type Block struct {
-	Hash     []byte
-	Data     []byte
-	PrevHash []byte
-	Nonce    int
+	Hash         []byte
+	Transactions []*Transaction
+	PrevHash     []byte
+	Nonce        int
+}
+
+func (b *Block) HashTransactions() []byte {
+	var txtHashes [][]byte
+	var txHash [32]byte
+
+	for _, tx := range b.Transactions {
+		txtHashes = append(txtHashes, tx.ID)
+	}
+
+	txHash = sha256.Sum256(bytes.Join(txtHashes, []byte{}))
+
+	return txHash[:]
 }
 
 /*
  *make actual block
  */
-func CreateBlock(data string, PrevHash []byte) *Block {
-	block := &Block{[]byte{}, []byte(data), PrevHash, 0}
+func CreateBlock(txs []*Transaction, PrevHash []byte) *Block {
+	block := &Block{[]byte{}, txs, PrevHash, 0}
 	pow := NewProof(block)
 	nonce, hash := pow.Run()
 	block.Hash = hash[:]
@@ -31,8 +45,8 @@ func CreateBlock(data string, PrevHash []byte) *Block {
 	return block
 }
 
-func Genesis() *Block {
-	return CreateBlock("Genesis", []byte{})
+func Genesis(coinbase *Transaction) *Block {
+	return CreateBlock([]*Transaction{coinbase}, []byte{})
 }
 
 func (b *Block) Serialize() []byte {
